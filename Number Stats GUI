@@ -1,0 +1,77 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter.scrolledtext import ScrolledText
+
+class StatsGui:
+    
+    def writeToScrollText(self, text):              
+        self.output.insert('end', text + '\n')
+        
+    def clearData(self):                            #function to clear the input for from the GUI for TimeIn entry and Submit Button
+        self.numValue_Ety.delete(0, 'end')
+        
+    def addNumber(self, event):                                           #will get the details for the vehicle that wants to park.
+        Num = int(self.numValue_Ety.get())
+        self._numbers.append(Num)
+        self.clearData()
+        self.writeToScrollText(f'Added {Num} to list')
+
+        
+
+                    
+    
+    def ShowParkingRecords(self, event):                
+        if self._numbers == []:                                                 #if self._parking is a empty dict, print No Records.
+            self.writeToScrollText(f'Number in list: {self._numbers}\nNo statistics to produce')
+        else:
+            total = 0
+            count = 0
+            self.writeToScrollText(f'Number in list: {self._numbers}')
+            self.writeToScrollText(f'Minimum: {min(self._numbers):>10}')
+            self.writeToScrollText(f'Maximum: {max(self._numbers):>10}')
+            for x in self._numbers:
+                total += x
+                count += 1
+            self.writeToScrollText(f'Total: {total:>12}')
+            self.writeToScrollText(f'Count of Numbers: {count:<1}')
+            self.writeToScrollText(f'Average:{"":>9}{total/count:.2f}')
+            
+    
+    
+    def __init__(self):
+        self._numbers = []
+        self.win = tk.Tk()
+        self.win.resizable(False, False)
+        self.win.title("Statistics")
+        self.create_widgets()
+        self.win.mainloop()
+        
+        
+    def create_widgets(self):
+        dataFrame = ttk.Frame(self.win)
+        dataFrame.grid(column=0, row=0)
+        inputDataFrame = ttk.Frame(dataFrame)
+        p1_lbl = ttk.Label(inputDataFrame, text="Number:")
+        p1_lbl.pack(side=tk.LEFT)
+        self.numValue = tk.StringVar()
+        self.numValue_Ety = ttk.Entry(inputDataFrame, width=18,\
+        textvariable=self.numValue)
+        self.numValue_Ety.pack(side=tk.LEFT)
+        inputDataFrame.grid(column = 0, row = 0)
+        actionFrame = ttk.Frame(dataFrame)
+        actionFrame.grid(column=0, row=1)
+        self.add_btn = ttk.Button(actionFrame, text="Add A Number")
+        self.add_btn.pack(side = tk.LEFT)
+        self.statistics_btn = ttk.Button(actionFrame, text="Get Statistics")
+        self.statistics_btn.pack(side = tk.LEFT)
+        outputFrame = ttk.Frame(self.win)
+        outputFrame.grid(column=0, row=2, columnspan=2)
+        self.output = ScrolledText(outputFrame, width=40, height=10,wrap=tk.WORD)
+        self.output.grid(column=0, row=0, sticky='WE', columnspan=2)
+        
+         
+        self.add_btn.bind('<Button-1>', self.addNumber)              
+        self.statistics_btn.bind('<Button-1>', self.ShowParkingRecords)                
+
+        
+StatsGui()
