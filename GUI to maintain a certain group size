@@ -62,3 +62,5 @@ class TourGui:
         
         self.add_btn.bind('<Button-1>', self.addPax)  
         self.remove_btn.bind('<Button-1>', self.removePax)
+        
+TourGui()
