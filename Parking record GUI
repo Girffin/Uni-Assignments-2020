@@ -1,0 +1,179 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter.scrolledtext import ScrolledText
+from datetime import datetime
+from datetime import timedelta
+
+
+class MyGUI:
+    
+        
+    def clearData(self):                            #function to clear the input for from the GUI for TimeIn entry and Submit Button
+        self._VehicleName_ety.delete(0, END)
+        self._timeIn_ety.delete(0, END)
+        self._carpark.set('A')
+        self._timeIn_ety.config(state = tk.DISABLED)
+        self._Submit_btn.config(state = tk.DISABLED)
+        
+    def clearData2(self):                           #function to clear the input from the GUI for TimeOut and Submit2 button
+        self._VehicleName_ety.delete(0, END)
+        self._timeOut_ety.delete(0, END)
+        self._carpark.set('A')
+        self._timeOut_ety.config(state = tk.DISABLED)
+        self._Submit2_btn.config(state = tk.DISABLED)
+        
+    
+    def writeToScrollText(self, text):              #write to the scroll text
+        self.output_stxt.config(state = NORMAL)
+        self.output_stxt.insert(END, text + '\n')
+        self.output_stxt.see(END)
+        self.output_stxt.config(state = DISABLED)
+        
+    def enableButton(self,event):                   #enable entry and button 
+        self._timeIn_ety.config(state = tk.NORMAL)
+        self._Submit_btn.config(state = tk.NORMAL)
+        
+        
+    def enableButton2(self,event):                  #enable entry and button
+        self._timeOut_ety.config(state = tk.NORMAL)
+        self._Submit2_btn.config(state = tk.NORMAL)
+        
+    def Details(self, event):                                           #will get the details for the vehicle that wants to park.
+        vehicleNum = self._VehicleName_ety.get().strip().upper()        
+        timeIn = self._timeIn_ety.get()
+        timeInFormat = datetime.strptime(timeIn, '%d/%m/%Y %I:%M %p')
+        timeOutFormat = None
+        Carpark = self._carpark.get()
+        charges = 0
+        if vehicleNum in self._parking:                                     #if vehicleNum in self._parking dictionary, then it will show the error msg
+            self.writeToScrollText(f'Vehicle record shows vehicle has not yet exited since entering at {timeIn}')
+        else:                                                               #else it will add the values into a list and then add it into the dictionary
+            self._parking[vehicleNum] = [timeIn, timeOutFormat , Carpark, 0]
+            self.writeToScrollText(f'Vehicle: {vehicleNum}  Time In: {timeIn} Carpark: {Carpark}')
+        self.clearData()                                                    #then it will clear the inputs and reset all the buttons
+            
+    def ExitParking(self):                                           #will check if vehicleNum is in the dictionary
+        vehicleNum = self._VehicleName_ety.get().strip().upper()
+        timeOut = self._timeOut_ety.get()
+        timeOutFormat = datetime.strptime(timeOut, '%d/%m/%Y %I:%M %p')
+        if vehicleNum in self._parking:
+            for k, v in self._parking.items():
+                if k == vehicleNum:                                         #if vehicleNum in dictionary, it will compare the timeIn and TimeOut to see if Timeout is < then timeIn
+                    timeInFormat = datetime.strptime(v[0], '%d/%m/%Y %I:%M %p')
+                    if timeOutFormat < timeInFormat:
+                        self.writeToScrollText(f'Error: Vehicle entry {v[0]} is later than {timeOut}')      #if timeOut< timeIn, then print error msg
+                    elif v[1] is not None:  
+                        self.writeToScrollText(f'Error: Vehicle has exited earlier at {v[1]}')          #if timeOut is already recorded then will print this message
+                    elif timeOutFormat > timeInFormat:                                                  #if timeOut>TimeIn, then it will proceed to check for which carpark it is in.
+                        if v[2] == 'A':
+                            v[1] = timeOut               #if in carpark A. It will calculate the time then convert to mins then multiply by 0.04cents
+                            diff = (timeOutFormat - timeInFormat).seconds//60
+                            v[3] = diff * 0.04
+                        elif v[2] == 'B':                ##if in carpark B. It will calculate the time then convert to mins then multiply by 0.03cents
+                            v[1] = timeOut
+                            diff = (timeOutFormat - timeInFormat).seconds//60
+                            v[3] = diff * 0.03
+                        self.writeToScrollText(f'Vehicle: {k} In: {v[0]} Out: {v[1]}\nCarpark: {v[2]} Charges: ${v[3]:.2f}\nPlease pay: ${v[3]:.2f}')  #print out the summary of parking and charges
+                    self.clearData2()
+        else:
+            self.writeToScrollText(f'{vehicleNum} is not in records')               #if vehicleNum not in dict, then print error msg
+            self.clearData2()
+
+    def ShowParkingRecords(self, event):                
+        if self._parking == {}:                                                 #if self._parking is a empty dict, print No Records.
+            self.writeToScrollText('Parking Records:\nNo records yet')
+        else:
+            self.writeToScrollText('Parking Records:')                  #else it will check for all the values and print out accordingly.
+            for k, v in self._parking.items():
+                if v[1] is None:                        #if timeOut is None, then print first msg.
+                    self.writeToScrollText(f' Vehicle: {k:<10} In: {v[0]} Out: Parked\n {"":<19} Carpark: {v[2]} Charges: ${v[3]:.2f}')
+                else:
+                    self.writeToScrollText(f' Vehicle: {k:<10} In: {v[0]} Out: {v[1]}\n {"":<19} Carpark: {v[2]} Charges: ${v[3]:.2f}')           #else, if timeOut is not None, print this message
+    def clearInputOutput(self, event):          #clear all and reset everything to the start
+        self.clearData()
+        self.clearData2()
+        self.output_stxt.config(state = NORMAL)
+        self.output_stxt.delete(1.0, END)
+        self._Submit2_btn.config(state = tk.DISABLED)
+        
+    
+    def __init__(self):
+        win = Tk()
+        self._parking = {}          #empty Dict
+        win.title('Zitao Car Park Management')
+        self.createWidgets(win)
+        win.mainloop()
+        
+        
+    def createWidgets(self, win):
+        top = Frame(win)
+        bottom = Frame(win)
+        top.grid(row=0, column=0)
+        bottom.grid(row=2, column=0)
+        
+        leftTop = Frame(top)
+        leftTop.pack(side=LEFT)
+        middle = Frame(leftTop)
+        
+        self._VehicleName_lbl = ttk.Label(leftTop, text="Vehicle Number:")                          #labels for vehicle Number
+        self._VehicleName_ety = ttk.Entry(leftTop, width=18)                                        #entry box for Vehicle Number    
+        self._timeIn_lbl = ttk.Label(leftTop, text="Time in (dd/mm/yyyy hh:mm AM/PM):")         #label and entry box for timeIn
+        self._timeIn_ety = ttk.Entry(leftTop, width=18) 
+        self._timeIn_ety.config(state = tk.DISABLED)                #it will be disabled at first.
+        self._Carpark_lbl = ttk.Label(leftTop, text="Carpark:")         #carpark label for the radio button
+        self._timeOut_lbl = ttk.Label(leftTop, text="Time Out (dd/mm/yyyy hh:mm AM/PM):")   #timeOut label and entry
+        self._timeOut_ety = ttk.Entry(leftTop, width=18) 
+        self._timeOut_ety.config(state = tk.DISABLED)                   #it will be disabled at first
+        
+        self._VehicleName_lbl.grid(row=0, column=0, sticky=W)
+        self._VehicleName_ety.grid(row=0, column=1)
+        self._timeIn_lbl.grid(row=1, column=0, sticky=W)
+        self._timeIn_ety.grid(row=1, column=1)
+        self._Carpark_lbl.grid(row=2, column=0, sticky=E)
+        middle.grid(row=2, column=1, sticky=W)
+        self._timeOut_lbl.grid(row=3, column=0)
+        self._timeOut_ety.grid(row=3, column=1)
+        
+        
+        self._Park_btn = ttk.Button(leftTop, text="Park Vehicle")               #buttons for the parking management
+        self._Park_btn.grid(row=1, column=2)
+        
+        self._Submit_btn = ttk.Button(leftTop, text="Submit") 
+        self._Submit_btn.grid(row=2, column=2)
+        self._Submit_btn.config(state = tk.DISABLED)
+        
+        self._exit_btn = ttk.Button(leftTop, text="Exit Carpark") 
+        self._exit_btn.grid(row=3, column=2)
+        
+        self._Submit2_btn = ttk.Button(leftTop, text="Submit") 
+        self._Submit2_btn.grid(row=4, column=2)
+        self._Submit2_btn.config(state = tk.DISABLED)
+        
+        self._Show_btn = ttk.Button(leftTop, text="Show Parking Records") 
+        self._Show_btn.grid(row=5, column=0, sticky=E)
+        
+        self._clear_btn = ttk.Button(leftTop, text="Clear Input/Output") 
+        self._clear_btn.grid(row=5, column=1, sticky=W)
+        
+        
+        self._Park_btn.bind('<Button-1>', self.enableButton)                    #bind button 1 of mouse to self.enableButton
+        self._Submit_btn.bind('<Button-1>', self.Details)                       #bind button 1 to self.Details
+        self._Show_btn.bind('<Button-1>', self.ShowParkingRecords)              #bind button 1 to self.ShowParkingRecords    
+        self._exit_btn.bind('<Button-1>', self.enableButton2)                   #bind button 1 to self.enablebutton2
+        self._Submit2_btn.bind('<Button-1>', self.ExitParking)                  #bind button 1 to self.ExitParking
+        self._clear_btn.bind('<Button-1>', self.clearInputOutput) 
+        
+        self._carpark = StringVar()                                             #Radio buttons GUI
+        self._carpark.set('A')
+        male_rdbtn = Radiobutton(middle, text = 'A', variable=self._carpark, value='A')
+        female_rdbtn = Radiobutton(middle, text = 'B', variable=self._carpark, value='B')
+        male_rdbtn.grid(row=0, column=0)
+        female_rdbtn.grid(row=0, column=1)
+
+        
+        self.output_stxt = ScrolledText(bottom, width=80, height=10, wrap=tk.WORD)      #Scrolled text GUI
+        self.output_stxt.config(state = tk.DISABLED)
+        self.output_stxt.grid(row=0, column=0, sticky=NSEW)
+        
+MyGUI()
